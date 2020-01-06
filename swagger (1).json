@@ -1,0 +1,57 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "os-floating-ips",
+    "version": "Unknown"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/restws/identity/v3/accounts/{accountId}/workflows/{workflow}/conversations": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "description": "Basic R29vZGluZ19hbmRfQ29tcGFueV9CMkJfU1RHOlNhbGVzZm9yY2Ux\n",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "accountId",
+          "in": "path",
+          "description": "'55829'\n",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "workflow",
+          "in": "path",
+          "description": "WF_Gooding_and_Company.Auth.Domestic_STG\n",
+          "required": true,
+          "type": "string"
+        }
+      ],
+      "post": {
+        "operationId": "ListFloatingIPs",
+        "summary": "List floating IPs",
+        "description": "Lists floating IP addresses associated with the tenant or account.\n",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "examples": {
+              "application/json": "{\n  \"Status\": {\n    \"ConversationId\": \"31000302601599\",\n    \"RequestId\": \"570323599\",\n    \"TransactionStatus\": \"pending\",\n    \"ActionType\": \"otp\",\n    \"Reference\": \"string\"\n  },\n  \"Products\": [\n      {\n          \"ProductType\": \"OTP\",\n          \"ExecutedStepName\": \"OTP Step\",\n          \"ProductConfigurationName\": \"Gooding_and_Company.OTP_STG\",\n          \"ProductStatus\": \"pending\"\n      }\n  ]\n}",
+              "definitions": null
+            }
+          }
+        }
+      }
+    }
+  }
+}
