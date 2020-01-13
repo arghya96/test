@@ -1,0 +1,250 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Gooding LexisNexis Api Documentation",
+    "version": "1.0.0"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "Authorization",
+      "description": "Basic authorization check and send otp if passed"
+    },
+    {
+      "name": "Submit OTP",
+      "description": "Submit OTP to verify"
+    }
+  ],
+  "paths": {
+    "/services/apexrest/lexisnexis": {
+      "parameters": [
+        {
+          "name": "Authorization",
+          "in": "header",
+          "description": "Bearer {sessionId}\n",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "in": "body",
+          "name": "body",
+          "description": "Set Domestic to true for domestic users and false for International",
+          "schema": {
+            "$ref": "#/definitions/RequestBody"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Authorization"
+        ],
+        "summary": "Use for InstantId/FraudPoint/IVI verification",
+        "operationId": "Auth_check",
+        "description": "Fraudpoint & InstantId Flow(For Domestic) / IVI check(For International)\n",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "200 OK",
+            "examples": {
+              "application/json": {
+                "txnReasonCode": [],
+                "stepExcuted": "Send OTP",
+                "status": "pending",
+                "conversationId": "31000307770519"
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Submit OTP"
+        ],
+        "description": "Use for submittiong OTP",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Pet object that needs to be added to the store",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/passcode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "examples": {
+              "application/json": {
+                "txnReasonCode": [
+                  {
+                    "Description": null,
+                    "Code": "otp_fail_invalid_passcode"
+                  }
+                ],
+                "stepExcuted": "OTP Verification",
+                "status": "failed",
+                "conversationId": "31000307770519"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Person": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "$ref": "#/definitions/Name"
+        },
+        "Addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Address"
+          }
+        },
+        "SSN": {
+          "$ref": "#/definitions/SSN"
+        },
+        "Phones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Phones"
+          }
+        },
+        "Emails": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Email"
+          }
+        },
+        "Context": {
+          "type": "string",
+          "example": "primary"
+        }
+      }
+    },
+    "RequestBody": {
+      "type": "object",
+      "required": [
+        "domestic",
+        "persons"
+      ],
+      "properties": {
+        "domestic": {
+          "type": "string",
+          "example": true
+        },
+        "persons": {
+          "type": "array",
+          "xml": {
+            "name": "Person",
+            "wrapped": true
+          },
+          "items": {
+            "$ref": "#/definitions/Person"
+          }
+        }
+      }
+    },
+    "Name": {
+      "type": "object",
+      "properties": {
+        "FirstName": {
+          "type": "string",
+          "example": "LARRY"
+        },
+        "LastName": {
+          "type": "string",
+          "example": "GREEN"
+        }
+      }
+    },
+    "Address": {
+      "type": "object",
+      "properties": {
+        "StreetAddress1": {
+          "type": "string",
+          "example": "6137 N WASHTENAW AVE"
+        },
+        "city": {
+          "type": "string",
+          "example": "CHICAGO"
+        },
+        "State": {
+          "type": "string",
+          "example": "IL"
+        },
+        "Zip5": {
+          "type": "string",
+          "example": "01507"
+        },
+        "Country": {
+          "type": "string",
+          "example": "US"
+        },
+        "Context": {
+          "type": "string",
+          "example": "primary"
+        }
+      }
+    },
+    "SSN": {
+      "type": "object",
+      "properties": {
+        "Number": {
+          "type": "string",
+          "example": 419307460
+        },
+        "Type": {
+          "type": "string",
+          "example": "ssn9"
+        }
+      }
+    },
+    "Phones": {
+      "type": "object",
+      "properties": {
+        "Number": {
+          "type": "string",
+          "example": null
+        },
+        "Context": {
+          "type": "string",
+          "example": "mobile"
+        }
+      }
+    },
+    "Email": {
+      "type": "string",
+      "example": ""
+    },
+    "passcode": {
+      "type": "object",
+      "properties": {
+        "passcode": {
+          "type": "string",
+          "example": "7QSM7G"
+        },
+        "conversationId": {
+          "type": "string",
+          "example": 31000307770519
+        },
+        "domestic": {
+          "type": "string",
+          "example": true
+        }
+      }
+    }
+  }
+}
