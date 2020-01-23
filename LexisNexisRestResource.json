@@ -62,10 +62,11 @@
                 ],
                 "stepExcuted": "InstantId & FraudPoint",
                 "status": "Fail",
-                "conversationId": "31000313002189",
+                "conversationId": "31000313223629",
                 "contactStatus": {
                   "status": "Created",
-                  "conId": "0030r00000JVxf3AAD"
+                  "personContactId": "0030r00000JW3anAAD",
+                  "personAccountId": "0010r00000IVD8eAAH"
                 }
               }
             }
@@ -275,7 +276,7 @@
     },
     "Email": {
       "type": "string",
-      "example": ""
+      "example": "test123@test.com"
     },
     "Passcode": {
       "type": "object",
