@@ -1,0 +1,584 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Gooding LexisNexis Api Documentation",
+    "version": "1.3.0"
+  },
+  "servers": [
+    {
+      "url": "https://cs29.salesforce.com/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authorization",
+      "description": "Basic authorization check"
+    },
+    {
+      "name": "Send OTP With Person Account",
+      "description": "Send OTP to to user using AccountId"
+    },
+    {
+      "name": "Send OTP With Person JSON",
+      "description": "Send OTP to to user using Person JSON"
+    },
+    {
+      "name": "Submit OTP",
+      "description": "Submit OTP to verify"
+    },
+    {
+      "name": "Submit Bid",
+      "description": "Save the Register to bid submission data to Salesforce"
+    },
+    {
+      "name": "Upload File",
+      "description": "Save the Register to bid submission data to Salesforce"
+    }
+  ],
+  "paths": {
+    "/services/apexrest/lexisnexis/auth": {
+      "post": {
+        "tags": [
+          "Authorization"
+        ],
+        "summary": "Use for InstantId/FraudPoint/IVI verification",
+        "description": "Fraudpoint & InstantId Flow(For Domestic) / IVI check(For International)\n",
+        "operationId": "Auth_check",
+        "parameters": [],
+        "requestBody": {
+          "description": "1. Set Domestic to true for domestic users and false for International.\n2. For this endpoint either <b>Emails</b> or <b>PersonAccountId</b> must be provided. \n   * If PersonAccountId is provided and Emails is blank, then Email from the corresponding Account record will be used. \n   * If PersonAccountId is blank, Email will be used for searching existing Account, if not found then a new PersonAccount record will be created.\n   * If both AccountId and Email are present, then the existing Account will be updated with the provided email address.\n3. If an existing PersonAccount record is found, then the response status will contain 'Passed' or 'Failed' based on 'From Reliable Source?' (isReliable__pc, used for manual approval) and 'Authorised?' (isAuthorised__pc, used for LexisNexis approval). \n   * In this case call out to LexisNexis is not executed.\n   * If you want to send the user for verification to LexisNexis instead, set the __force__ parameter in the request body to true.\\\n  __Note-__ If force is true then the PASS/FAIL staus will be determined by the LexisNexis response and the isReliable__pc will also be ignored. However, the ContactStatus will contain that information.\\\n4. If you want to see the raw response from LexisNexis, send the 'debug' parameter in request body as true.\n",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "<ul> <li><b>status</b> will always return Passed/Failed/Error(with error message, if any) <li><b>txnReasonCode</b> contains all the failure reason if the status is 'Failed'. Except the condition when status = 'Failed' and contactStatus = 'Failed earlier'. <li><b>stepExcuted</b> contains either 'InstantId & FraudPoint' or 'IVI Check' based on domestic value. <li>status under <b>contactStatus</b> generally consistes of following values:<ul><li>Created : New PersonAccount is created<li>Coming from reliable source : Existing Contact found with 'From Reliable Source?' checked<li> Passed earlier : Existing Contact found with 'Authorised' checked <li>Failed earlier : Existing Contact found with both 'Authorised' and 'From Reliable Source?' checked</ul>",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "txnReasonCode": [
+                    {
+                      "Description": "Pend: FraudPoint verification failed",
+                      "Code": "pend_fraudpoint_thresholds_not_met"
+                    }
+                  ],
+                  "stepExcuted": "InstantId & FraudPoint",
+                  "status": "Fail",
+                  "conversationId": "31000313223629",
+                  "contactStatus": {
+                    "status": "Created",
+                    "personContactId": "0030r00000JW3anAAD",
+                    "personAccountId": "0010r00000IVD8eAAH"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    },
+    "/services/apexrest/lexisnexis/otp": {
+      "put": {
+        "tags": [
+          "Submit OTP"
+        ],
+        "description": "Use for submittiong OTP",
+        "parameters": [],
+        "requestBody": {
+          "description": "Use the same conversationId returned by Post response.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Passcode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "txnReasonCode": {
+                    "Code": "otp_fail_invalid_passcode"
+                  },
+                  "stepExcuted": "OTP Verification",
+                  "status": "failed",
+                  "conversationId": "31000341963768",
+                  "contactStatus": {
+                    "status": "failed",
+                    "personContactId": "0030r00000KtzmIAAR",
+                    "personAccountId": "0010r00000Jy7NaAAJ"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      },
+      "post": {
+        "tags": [
+          "Send OTP With Person JSON"
+        ],
+        "description": "Use for sending OTP to applicant using person JSON",
+        "parameters": [],
+        "requestBody": {
+          "description": "* Use different value for Method and Language in __otpDeliveryMethod__.\n\n* Available methods are Email(E), Text Message(T), Call(M) and available\nlanguages are English(EN), French(FR), Spanish(ES).\n",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBodyOTP"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "<ul><li> <b>conversationId</b> returned in the response is used for submitting the OTP.<li><b>status</b> is stored in the <b>OTP Verification Status</b> field of corresponding PersonAccount record in Salesforce.</ul>",
+            "content": {
+              "application/json": {
+                "example": {
+                  "txnReasonCode": [],
+                  "stepExcuted": "Send OTP",
+                  "status": "pending",
+                  "conversationId": "31000341963768",
+                  "contactStatus": {
+                    "status": "pending",
+                    "personContactId": "0030r00000KtzmIAAR",
+                    "personAccountId": "0010r00000Jy7NaAAJ"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    },
+    "/services/apexrest/lexisnexis/bidsubmission": {
+      "post": {
+        "tags": [
+          "Submit Bid"
+        ],
+        "description": "This endpoint lets you save the <b>Register to bid submission</b> data into Salesforce.\n\n **Note** : </b> For this endpoint you either need <b>*personEmail*</b> or <b>*personAccountId*</b> is required.",
+        "parameters": [],
+        "requestBody": {
+          "description": "In the body you can assign any new field by their <b>*API*</b> name, for example if you want to update the <b>Bidding Limit</b>, in that case you have to use <b>*Bidding_Limit__c*</b> field in the body with the updated value",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bidbody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "uploadDocumentLink": "https://cs29.salesforce.com/services/data/v47.0/sobjects/ContentVersion",
+                  "success": true,
+                  "firstPublishLocationId": "0010r00000AVtqtAAD"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    },
+    "/services/data/v47.0/sobjects/ContentVersion": {
+      "post": {
+        "tags": [
+          "Upload File"
+        ],
+        "description": "After submiting the bid information, in the response we will get an <b>*uploadDocumentLink*</b> and <b>*firstPublishLocationId*</b>(which is the person account id), using those we will upload document.\n\n ><b>firstPublishLocationId </b>: Will go to *entity_content*'s FirstPublishLocationId field\n\n ><b>uploadDocumentLink </b> : will be used as a *endpoint*",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "versionData": {
+                    "type": "string",
+                    "format": "base64"
+                  },
+                  "entity-content": {
+                    "type": "object",
+                    "properties": {
+                      "Title": {
+                        "type": "string"
+                      },
+                      "PathOnClient": {
+                        "type": "string"
+                      },
+                      "FirstPublishLocationId": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "0680r000000PwofAAC",
+                  "success": true,
+                  "errors": []
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    },
+    "/services/apexrest/lexisnexis/otp/account": {
+      "post": {
+        "tags": [
+          "Send OTP With Person Account"
+        ],
+        "description": "Use for sending OTP to applicant by using their person account Id",
+        "requestBody": {
+          "description": "* Use different value for Method and Language in __otpDeliveryMethod__.\n\n* Available methods are Email(E), Text Message(T), Call(M) and available\nlanguages are English(EN), French(FR), Spanish(ES).\n",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBodyOTPAcc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "<ul><li> <b>conversationId</b> returned in the response is used for submitting the OTP.<li><b>status</b> is stored in the <b>OTP Verification Status</b> field of corresponding PersonAccount record in Salesforce.</ul>",
+            "content": {
+              "application/json": {
+                "example": {
+                  "txnReasonCode": [],
+                  "stepExcuted": "Send OTP",
+                  "status": "pending",
+                  "conversationId": "31000341963768",
+                  "contactStatus": {
+                    "status": "pending",
+                    "personContactId": "0030r00000KtzmIAAR",
+                    "personAccountId": "0010r00000Jy7NaAAJ"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Person": {
+        "type": "object",
+        "properties": {
+          "Name": {
+            "$ref": "#/components/schemas/Name"
+          },
+          "Addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          "Phones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Phones"
+            }
+          },
+          "Emails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Email"
+            }
+          },
+          "PersonAccountId": {
+            "type": "string",
+            "example": "0013F00000Xot"
+          },
+          "Context": {
+            "type": "string",
+            "example": "primary"
+          }
+        }
+      },
+      "RequestBody": {
+        "required": [
+          "domestic"
+        ],
+        "type": "object",
+        "properties": {
+          "domestic": {
+            "type": "boolean",
+            "example": true
+          },
+          "force": {
+            "type": "boolean",
+            "example": false
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          }
+        }
+      },
+      "RequestBodyOTP": {
+        "required": [
+          "domestic",
+          "person"
+        ],
+        "type": "object",
+        "properties": {
+          "domestic": {
+            "type": "boolean",
+            "example": true
+          },
+          "personAccountId": {
+            "type": "string",
+            "example": "0010r00000Jy7NaAAJ"
+          },
+          "otpDeliveryInfo": {
+            "$ref": "#/components/schemas/OtpDeliveryInfo"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          }
+        }
+      },
+      "RequestBodyOTPAcc": {
+        "required": [
+          "domestic"
+        ],
+        "type": "object",
+        "properties": {
+          "domestic": {
+            "type": "boolean",
+            "example": true
+          },
+          "personAccountId": {
+            "type": "string",
+            "example": "0010r00000Jy7NaAAJ"
+          },
+          "otpDeliveryInfo": {
+            "$ref": "#/components/schemas/OtpDeliveryInfo"
+          }
+        }
+      },
+      "Name": {
+        "type": "object",
+        "properties": {
+          "FirstName": {
+            "type": "string",
+            "example": "LARRY"
+          },
+          "LastName": {
+            "type": "string",
+            "example": "GREEN"
+          }
+        }
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "StreetAddress1": {
+            "type": "string",
+            "example": "6137 N WASHTENAW AVE"
+          },
+          "StreetAddress2": {
+            "type": "string",
+            "example": "Chicago, IL USA"
+          },
+          "City": {
+            "type": "string",
+            "example": "CHICAGO"
+          },
+          "State": {
+            "type": "string",
+            "example": "IL"
+          },
+          "Zip5": {
+            "type": "string",
+            "example": "01507"
+          },
+          "Country": {
+            "type": "string",
+            "example": "US"
+          },
+          "Context": {
+            "type": "string",
+            "example": "primary"
+          }
+        }
+      },
+      "Phones": {
+        "type": "object",
+        "properties": {
+          "Numbr": {
+            "type": "string",
+            "example": null
+          },
+          "Context": {
+            "type": "string",
+            "example": "mobile"
+          }
+        }
+      },
+      "Email": {
+        "type": "string",
+        "example": "ashish.jain@sidebench.com"
+      },
+      "Passcode": {
+        "type": "object",
+        "properties": {
+          "passcode": {
+            "type": "string",
+            "example": "953158"
+          },
+          "personAccountId": {
+            "type": "string",
+            "example": "0010r00000Jy7NaAAJ"
+          },
+          "conversationId": {
+            "type": "string",
+            "example": "31000312954899"
+          },
+          "domestic": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "bidbody": {
+        "type": "object",
+        "properties": {
+          "personEmail": {
+            "type": "string",
+            "example": "test.gooding@gmail.com"
+          },
+          "personAccountId": {
+            "type": "string",
+            "example": "0010r00000AVtqtAAD"
+          },
+          "auctionTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Online-Only"
+            ]
+          },
+          "privacyPolicyTimestamp": {
+            "type": "string",
+            "example": "2020-06-29T09:33:25.000+0000"
+          }
+        }
+      },
+      "OtpDeliveryInfo": {
+        "type": "object",
+        "properties": {
+          "Method": {
+            "type": "string",
+            "example": "E"
+          },
+          "Language": {
+            "type": "string",
+            "example": "EN"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "txnReasonCode": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stepExcuted": {
+            "type": "string",
+            "example": "InstantId & FraudPoint"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed erlier",
+              "Atleast one email Id is required",
+              "Authorised Earlier"
+            ]
+          },
+          "rawResponse": {
+            "type": "string",
+            "example": null
+          },
+          "conversationId": {
+            "type": "string",
+            "example": null
+          },
+          "contactStatus": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "failed"
+              },
+              "personContactId": {
+                "type": "string",
+                "example": "0030r00000JW3anAAD"
+              },
+              "personAccountId": {
+                "type": "string",
+                "example": "0010r00000IVD8eAAH"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authorization": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Bearer {sessionId}"
+      }
+    }
+  },
+  "security": [
+    {
+      "Authorization": []
+    }
+  ]
+}
